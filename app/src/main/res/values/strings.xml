@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">GroceryList</string>
+    <string name="pizza">Pizza</string>
+    <string name="shampoo">Shampoo</string>
+    <string name="coffee">Coffee</string>
+    <string name="chips">Chips</string>
+</resources>
