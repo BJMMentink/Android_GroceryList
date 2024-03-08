@@ -4,4 +4,9 @@
     <string name="shampoo">Shampoo</string>
     <string name="coffee">Coffee</string>
     <string name="chips">Chips</string>
+    <string name="delete_checked">Delete Checked</string>
+    <string name="clear_all">Clear All</string>
+    <string name="add_item">Add Item</string>
+    <string name="show_shopping_list">Show Shopping List</string>
+    <string name="show_master_list">Show Master List</string>
 </resources>

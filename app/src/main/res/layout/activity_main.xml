@@ -4,56 +4,47 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/gradient"
     tools:context=".MainActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!"
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" >
-
-        <Button
-            android:id="@+id/btnPizza"
+        <CheckBox
+            android:id="@+id/cbxPizza"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/pizza"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"/>
+            android:layout_marginBottom="8dp"
+            android:text="@string/pizza" />
 
-        <Button
-            android:id="@+id/btnShampoo"
+        <CheckBox
+            android:id="@+id/cbxShampoo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/shampoo"
-            app:layout_constraintTop_toBottomof="btnPizza"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"/>
+            android:layout_marginBottom="8dp"
+            android:text="@string/shampoo" />
 
-        <Button
-            android:id="@+id/btnCoffee"
+        <CheckBox
+            android:id="@+id/cbxCoffee"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/coffee"
-            app:layout_constraintTop_toBottomof="btnShampoo"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"/>
+            android:layout_marginBottom="8dp"
+            android:text="@string/coffee" />
 
-        <Button
-            android:id="@+id/btnChips"
+        <CheckBox
+            android:id="@+id/cbxChips"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/chips"
-            app:layout_constraintTop_toBottomof="btnCoffee"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"/>
+            android:layout_marginBottom="8dp"
+            android:text="@string/chips" />
     </androidx.recyclerview.widget.RecyclerView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
