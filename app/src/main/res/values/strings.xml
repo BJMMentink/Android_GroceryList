@@ -9,4 +9,6 @@
     <string name="add_item">Add Item</string>
     <string name="show_shopping_list">Show Shopping List</string>
     <string name="show_master_list">Show Master List</string>
+    <string name="description">Description:</string>
+    <string name="enter_description">Enter description</string>
 </resources>
