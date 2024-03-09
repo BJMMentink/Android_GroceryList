@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -11,11 +12,13 @@ import java.util.ArrayList;
 
 public class GroceryListAdapter extends RecyclerView.Adapter<GroceryListAdapter.ListViewHolder> {
     private ArrayList<GroceryItem> groceryItems;
-    private View.OnClickListener onItemClickListener;
-    private CheckBox.OnCheckedChangeListener onCheckedChangeListener;
+    private boolean isShoppingList;
+    private CompoundButton.OnCheckedChangeListener onCheckedChangeListener; // Define onCheckedChangeListener variable
 
-    public GroceryListAdapter(ArrayList<GroceryItem> data, Context context, CheckBox.OnCheckedChangeListener onCheckedChangeListener) {
-        groceryItems = data;
+    // Constructor to initialize the adapter with groceryItems, isShoppingList, and onCheckedChangeListener
+    public GroceryListAdapter(ArrayList<GroceryItem> groceryItems, boolean isShoppingList, CompoundButton.OnCheckedChangeListener onCheckedChangeListener) {
+        this.groceryItems = groceryItems;
+        this.isShoppingList = isShoppingList;
         this.onCheckedChangeListener = onCheckedChangeListener;
     }
 
@@ -29,14 +32,28 @@ public class GroceryListAdapter extends RecyclerView.Adapter<GroceryListAdapter.
     @Override
     public void onBindViewHolder(@NonNull ListViewHolder holder, int position) {
         GroceryItem item = groceryItems.get(position);
-        holder.cbxShoppingCart.setChecked(item.isOnShoppingList());
-        holder.tvDescription.setText(item.getDescription());
-
-        // Set the tag to the position of the item to track its position
+        holder.cbxShoppingCart.setText(item.getDescription());
         holder.cbxShoppingCart.setTag(position);
-        // Set the onCheckedChangeListener for the checkbox
         holder.cbxShoppingCart.setOnCheckedChangeListener(onCheckedChangeListener);
+        if (MainActivity.isShoppingList) {
+            if (item.isInCart()){
+                holder.cbxShoppingCart.setChecked(true);
+            }
+            else{
+                holder.cbxShoppingCart.setChecked(false);
+            }
+        } else {
+            if (item.isOnShoppingList()){
+                holder.cbxShoppingCart.setChecked(true);
+            }
+            else{
+                holder.cbxShoppingCart.setChecked(false);
+            }
+        }
     }
+
+
+
 
     @Override
     public int getItemCount() {
