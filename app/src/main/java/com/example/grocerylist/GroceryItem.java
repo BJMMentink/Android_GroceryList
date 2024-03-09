@@ -1,10 +1,15 @@
 package com.example.grocerylist;
-
 public class GroceryItem {
+
     private String description;
     private boolean isOnShoppingList;
     private boolean isInCart;
-    private boolean isMainScreen;
+
+    public GroceryItem(String description, boolean isOnShoppingList, boolean isInCart) {
+        this.description = description;
+        this.isOnShoppingList = isOnShoppingList;
+        this.isInCart = isInCart;
+    }
 
     public String getDescription() {
         return description;
@@ -28,12 +33,5 @@ public class GroceryItem {
 
     public void setInCart(boolean inCart) {
         isInCart = inCart;
-    }
-    public boolean isMainScreen() {
-        return isMainScreen;
-    }
-
-    public void setMainScreen(boolean mainScreen) {
-        isMainScreen = mainScreen;
     }
 }

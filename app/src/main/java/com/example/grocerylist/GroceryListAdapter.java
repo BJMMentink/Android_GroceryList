@@ -1,5 +1,7 @@
 package com.example.grocerylist;
 
+import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,42 +13,56 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
-public class GroceryListAdapter extends RecyclerView.Adapter<GroceryListAdapter.GroceryViewHolder> {
-
+public class GroceryListAdapter extends RecyclerView.Adapter<GroceryListAdapter.ListViewHolder> {
+public static final String TAG = "GroceryListAdapter";
     private ArrayList<GroceryItem> groceryItems;
-    private OnItemClickListener onItemClickListener;
+    private View.OnClickListener onItemClickListener;
+    private Context parentContext;
 
-    public GroceryListAdapter(ArrayList<GroceryItem> groceryItems) {
-        this.groceryItems = groceryItems;
+    public class ListViewHolder extends RecyclerView.ViewHolder {
+        public CheckBox cbxShoppingCart;
+        public TextView tvDescription;
+
+        public ListViewHolder(@NonNull View itemView) {
+            super(itemView);
+            cbxShoppingCart = itemView.findViewById(R.id.cbxShoppingCart);
+            tvDescription = itemView.findViewById(R.id.tvDescription);
+
+            itemView.setTag(this);
+            itemView.setOnClickListener(onItemClickListener);
+        }
+
+        public TextView gettvDescription() {
+            return tvDescription;
+        }
+
+        public CheckBox getcbxShoppingCart() {
+            return cbxShoppingCart;
+        }
     }
 
-    public void setOnItemClickListener(OnItemClickListener itemClickListener) {
-        this.onItemClickListener = itemClickListener;
+    public GroceryListAdapter(ArrayList<GroceryItem> data, Context context) {
+        groceryItems = data;
+        Log.d(TAG, "GroceryListAdapter: " + data.size());
+        parentContext = context;
     }
 
+    public void setOnItemClickListener(View.OnClickListener itemClickListener) {
+        onItemClickListener = itemClickListener;
+    }
 
     @NonNull
     @Override
-    public GroceryViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_grocery, parent, false);
-        return new GroceryViewHolder(view, onItemClickListener);
+    public ListViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_grocery, parent, false);
+        return new ListViewHolder(v);
     }
 
-
     @Override
-    public void onBindViewHolder(@NonNull GroceryViewHolder holder, int position) {
-        GroceryItem groceryItem = groceryItems.get(position);
-        holder.descriptionTextView.setText(groceryItem.getDescription());
-        if (groceryItem.isOnShoppingList()) {
-            holder.shoppingCheckBox.setVisibility(View.VISIBLE);
-            holder.shoppingCheckBox.setChecked(true);
-        } else {
-            holder.shoppingCheckBox.setVisibility(View.INVISIBLE);
-        }
-        holder.shoppingCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            groceryItem.setOnShoppingList(isChecked);
-            notifyDataSetChanged();
-        });
+    public void onBindViewHolder(@NonNull ListViewHolder holder, int position) {
+        GroceryItem item = groceryItems.get(position);
+        holder.getcbxShoppingCart().setChecked(item.isOnShoppingList());
+        holder.gettvDescription().setText(item.getDescription());
     }
 
     @Override
@@ -54,32 +70,10 @@ public class GroceryListAdapter extends RecyclerView.Adapter<GroceryListAdapter.
         return groceryItems.size();
     }
 
-    public interface OnItemClickListener {
-        void onItemClick(View view, int position);
+    public void updateList(ArrayList<GroceryItem> newList) {
+        groceryItems.addAll(newList);
+        notifyDataSetChanged();
     }
 
-    public static class GroceryViewHolder extends RecyclerView.ViewHolder {
 
-        TextView descriptionTextView;
-        CheckBox shoppingCheckBox;
-
-        OnItemClickListener onItemClickListener;
-
-        public GroceryViewHolder(@NonNull View itemView, OnItemClickListener onItemClickListener) {
-            super(itemView);
-            descriptionTextView = itemView.findViewById(R.id.tvDescription);
-            shoppingCheckBox = itemView.findViewById(R.id.cbxShoppingCart);
-
-            this.onItemClickListener = onItemClickListener;
-
-            itemView.setOnClickListener(view -> {
-                if (onItemClickListener != null) {
-                    int position = getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION) {
-                        onItemClickListener.onItemClick(view, position);
-                    }
-                }
-            });
-        }
-    }
 }

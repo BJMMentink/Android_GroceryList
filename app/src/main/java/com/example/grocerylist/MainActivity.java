@@ -1,38 +1,62 @@
 package com.example.grocerylist;
-
-import android.content.Intent;
+import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
-public abstract class MainActivity extends AppCompatActivity implements GroceryListAdapter.OnItemClickListener {
-
-    private ArrayList<GroceryItem> groceryItems;
+public class MainActivity extends AppCompatActivity {
+public static final String TAG = "MainActivity";
     private RecyclerView recyclerView;
+    private ArrayList<GroceryItem> groceryItems;
     private GroceryListAdapter adapter;
+    private boolean isShoppingList = false;
+
+    private View.OnClickListener onClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            RecyclerView.ViewHolder viewHolder = (RecyclerView.ViewHolder) v.getTag();
+            int position = viewHolder.getAdapterPosition();
+            GroceryItem groceryItem = groceryItems.get(position);
+            String description = groceryItem.getDescription();
+            boolean isOnShoppingList = groceryItem.isOnShoppingList();
+            boolean isInCart = groceryItem.isInCart();
+            Log.d(TAG, "onClick: Description: " + description +
+                    ", isOnShoppingList: " + isOnShoppingList +
+                    ", isInCart: " + isInCart);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        recyclerView = findViewById(R.id.rvContainer);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        groceryItems = new ArrayList<>();
-        adapter = new GroceryListAdapter(groceryItems);
-        recyclerView.setAdapter(adapter);
+        groceryItems = readFromFile(this, "grocery_list.txt");
 
-        adapter.setOnItemClickListener(this);
+        RecyclerView rvList = findViewById(R.id.rvContainer);
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
+        rvList.setLayoutManager(layoutManager);
+
+        adapter = new GroceryListAdapter(groceryItems, this);
+        rvList.setAdapter(adapter);
+        adapter.setOnItemClickListener(onClickListener);
+
+        Log.d(TAG, "onCreate: ");
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -44,77 +68,75 @@ public abstract class MainActivity extends AppCompatActivity implements GroceryL
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
 
-        if (itemId == R.id.action_MasterList) {
-            // Implement logic to show master list
+        if (itemId == R.id.action_MasterList && isShoppingList) {
+            // Load and display the Master List with checkboxes
+            groceryItems = FileManager.readGroceryItemsFromFile(this);
+            adapter.updateList(groceryItems);
+            setTitle("Master List");
+            isShoppingList = false;
             return true;
-        } else if (itemId == R.id.action_ShoppingList) {
-            // Implement logic to show shopping list
+        } else if (itemId == R.id.action_ShoppingList && !isShoppingList) {
+            // Load and display the Shopping List without checkboxes checked
+            groceryItems = FileManager.readGroceryItemsFromFile(this);
+            adapter.updateList(groceryItems);
+            setTitle("Shopping List");
+            isShoppingList = true;
             return true;
         } else if (itemId == R.id.action_Add) {
-            showAddItemDialog();
+            // Show a dialog for adding a new item
+            FileManager.showAddItemDialog(this, groceryItems, adapter, isShoppingList);
             return true;
         } else if (itemId == R.id.action_Clear) {
-            clearAllCheckboxes();
+            // Clear all checkboxes
+            FileManager.clearAllCheckboxes(groceryItems);
+            adapter.notifyDataSetChanged();
             return true;
         } else if (itemId == R.id.action_Delete) {
-            deleteCheckedItems();
+            // Delete checked items
+            FileManager.deleteCheckedItems(this, groceryItems, adapter, isShoppingList);
             return true;
         } else {
             return super.onOptionsItemSelected(item);
         }
     }
+    public static ArrayList<GroceryItem> readFromFile(Context context, String filename) {
+        ArrayList<GroceryItem> groceryItems = new ArrayList<>();
+        try {
+            InputStream inputStream = context.openFileInput(filename);
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 
+            // Determine the number of lines in the file
+            int numLines = 0;
+            while (bufferedReader.readLine() != null) {
+                numLines++;
+            }
 
-    private void showAddItemDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Add Item");
-        builder.setPositiveButton("Add", (dialog, which) -> {
-        });
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-        builder.show();
-    }
+            // Reset the reader to the beginning of the file
+            inputStream = context.openFileInput(filename);
+            inputStreamReader = new InputStreamReader(inputStream);
+            bufferedReader = new BufferedReader(inputStreamReader);
 
-    private void clearAllCheckboxes() {
-        // Implement logic to clear all checkboxes
-    }
+            // Read each line and parse grocery items
+            for (int i = 0; i < numLines; i++) {
+                String line = bufferedReader.readLine();
+                String[] parts = line.split("\\|");
+                if (parts.length == 3) {
+                    String description = parts[0];
+                    boolean isOnShoppingList = parts[1].equals("1");
+                    boolean isInCart = parts[2].equals("1");
+                    GroceryItem item = new GroceryItem(description, isOnShoppingList, isInCart);
+                    groceryItems.add(item);
+                }
+            }
 
-    private void deleteCheckedItems() {
-        // Implement logic to delete checked items
-    }
-
-
-    public void onItemClick(int position) {
-        GroceryItem clickedItem = groceryItems.get(position);
-
-        Toast.makeText(this, "Clicked item: " + clickedItem.getDescription(), Toast.LENGTH_SHORT).show();
-
-        if (clickedItem.isOnShoppingList()) {
-            clickedItem.setOnShoppingList(false);
-        }else{
-            clickedItem.setOnShoppingList(true);
+            inputStream.close();
+        } catch (FileNotFoundException e) {
+            Log.e(TAG, "File not found: " + filename, e);
+        } catch (Exception e) {
+            Log.e(TAG, "Error reading from file: " + filename, e);
         }
-        if (!clickedItem.isInCart()) {
-            clickedItem.setInCart(true);
-        }else {
-            clickedItem.setInCart(false);
-        }
-    }
-    public void onBindViewHolder(@NonNull GroceryListAdapter.GroceryViewHolder holder, int position) {
-        GroceryItem groceryItem = groceryItems.get(position);
-        holder.descriptionTextView.setText(groceryItem.getDescription());
-        holder.shoppingCheckBox.setChecked(groceryItem.isOnShoppingList());
-        holder.shoppingCheckBox.setChecked(groceryItem.isInCart());
-        if (groceryItem.isOnShoppingList()) {
-            holder.shoppingCheckBox.setChecked(true);
-        } else {
-            holder.shoppingCheckBox.setChecked(false);
-        }
-        if (groceryItem.isInCart()) {
-            holder.shoppingCheckBox.setChecked(true);
-        } else {
-            holder.shoppingCheckBox.setChecked(false);
-        }
+        return groceryItems;
     }
 
 }
-
