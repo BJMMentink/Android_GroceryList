@@ -1,11 +1,12 @@
 package com.example.grocerylist;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Toast;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,43 +21,58 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 public static final String TAG = "MainActivity";
-    private RecyclerView recyclerView;
     private ArrayList<GroceryItem> groceryItems;
     private GroceryListAdapter adapter;
     private boolean isShoppingList = false;
-
-    private View.OnClickListener onClickListener = new View.OnClickListener() {
+    private CheckBox.OnCheckedChangeListener onCheckedChangeListener = new CheckBox.OnCheckedChangeListener() {
+        @SuppressLint("NotifyDataSetChanged")
         @Override
-        public void onClick(View v) {
-            RecyclerView.ViewHolder viewHolder = (RecyclerView.ViewHolder) v.getTag();
-            int position = viewHolder.getAdapterPosition();
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            int position = (int) buttonView.getTag();
             GroceryItem groceryItem = groceryItems.get(position);
-            String description = groceryItem.getDescription();
-            boolean isOnShoppingList = groceryItem.isOnShoppingList();
-            boolean isInCart = groceryItem.isInCart();
-            Log.d(TAG, "onClick: Description: " + description +
-                    ", isOnShoppingList: " + isOnShoppingList +
-                    ", isInCart: " + isInCart);
+            groceryItem.setOnShoppingList(isChecked);
+            FileManager.writeGroceryItemsToFile(MainActivity.this, "grocery_list.txt", groceryItems, isShoppingList, isChecked);
+
+            adapter.notifyDataSetChanged();
         }
     };
 
+
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        groceryItems = new ArrayList<>();
 
-        groceryItems = readFromFile(this, "grocery_list.txt");
+        groceryItems.addAll(readFromFile(this, "grocery_list.txt"));
 
         RecyclerView rvList = findViewById(R.id.rvContainer);
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
         rvList.setLayoutManager(layoutManager);
 
-        adapter = new GroceryListAdapter(groceryItems, this);
+        adapter = new GroceryListAdapter(groceryItems, this, onCheckedChangeListener);
         rvList.setAdapter(adapter);
-        adapter.setOnItemClickListener(onClickListener);
+        onCheckedChangeListener = (buttonView, isChecked) -> {
+            int position = (int) buttonView.getTag();
+            GroceryItem groceryItem = groceryItems.get(position);
+            groceryItem.setOnShoppingList(isChecked);
+            FileManager.writeGroceryItemsToFile(MainActivity.this, "grocery_list.txt", groceryItems, isShoppingList, isChecked);
 
+            adapter.notifyDataSetChanged();
+        };
+
+
+        adapter = new GroceryListAdapter(groceryItems, this, onCheckedChangeListener);
+
+
+        setTitle("Master List");
         Log.d(TAG, "onCreate: ");
     }
+
+
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -64,41 +80,98 @@ public static final String TAG = "MainActivity";
         return true;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
 
+        RecyclerView recyclerView;
         if (itemId == R.id.action_MasterList && isShoppingList) {
-            // Load and display the Master List with checkboxes
-            groceryItems = FileManager.readGroceryItemsFromFile(this);
-            adapter.updateList(groceryItems);
+            groceryItems.clear();
+            groceryItems.addAll(FileManager.readGroceryItemsFromFile(this));
+            adapter.notifyDataSetChanged();
             setTitle("Master List");
             isShoppingList = false;
             return true;
         } else if (itemId == R.id.action_ShoppingList && !isShoppingList) {
-            // Load and display the Shopping List without checkboxes checked
-            groceryItems = FileManager.readGroceryItemsFromFile(this);
-            adapter.updateList(groceryItems);
+            ArrayList<GroceryItem> shoppingListItems = new ArrayList<>();
+            for (GroceryItem Gitem : groceryItems) {
+                if (Gitem.isOnShoppingList()) {
+                    shoppingListItems.add(Gitem);
+                }
+            }
+            clearAllCheckboxes();
+            groceryItems.clear();
+            groceryItems.addAll(shoppingListItems);
+            recyclerView = findViewById(R.id.rvContainer);
+            adapter = new GroceryListAdapter(groceryItems, this, onCheckedChangeListener);
+            recyclerView.setAdapter(adapter);
+            adapter.notifyDataSetChanged();
             setTitle("Shopping List");
             isShoppingList = true;
             return true;
         } else if (itemId == R.id.action_Add) {
-            // Show a dialog for adding a new item
+            // Done
             FileManager.showAddItemDialog(this, groceryItems, adapter, isShoppingList);
             return true;
         } else if (itemId == R.id.action_Clear) {
-            // Clear all checkboxes
-            FileManager.clearAllCheckboxes(groceryItems);
+            ArrayList<GroceryItem> shoppingListItems = new ArrayList<>();
+            clearAllCheckboxes();
+            for (GroceryItem Gitem : groceryItems) {
+                if (isShoppingList){
+                    if (Gitem.isOnShoppingList()) {
+                        shoppingListItems.add(Gitem);
+                    }
+                }else {
+                    shoppingListItems.add(Gitem);
+                }
+
+            }
+            groceryItems.clear();
+            groceryItems.addAll(shoppingListItems);
             adapter.notifyDataSetChanged();
             return true;
         } else if (itemId == R.id.action_Delete) {
-            // Delete checked items
-            FileManager.deleteCheckedItems(this, groceryItems, adapter, isShoppingList);
+            ArrayList<GroceryItem> shoppingListItems = new ArrayList<>();
+            recyclerView = findViewById(R.id.rvContainer);
+            FileManager.deleteCheckedItems(this, groceryItems, adapter, isShoppingList, recyclerView);
+            adapter.notifyDataSetChanged();
+            FileManager.writeGroceryItemsToFile(MainActivity.this, "grocery_list.txt", groceryItems, null, false);
+
+            groceryItems.addAll(shoppingListItems);
+            recyclerView = findViewById(R.id.rvContainer);
+            adapter = new GroceryListAdapter(groceryItems, this, onCheckedChangeListener);
+            recyclerView.setAdapter(adapter);
+            adapter.notifyDataSetChanged();
             return true;
         } else {
             return super.onOptionsItemSelected(item);
         }
     }
+    @SuppressLint("NotifyDataSetChanged")
+    private void clearAllCheckboxes() {
+        RecyclerView rvStuff = findViewById(R.id.rvContainer);
+        if (rvStuff != null && rvStuff.getLayoutManager() != null) {
+            for (int i = 0; i < rvStuff.getLayoutManager().getItemCount(); i++) {
+                RecyclerView.ViewHolder viewHolder = rvStuff.findViewHolderForAdapterPosition(i);
+                if (viewHolder != null && viewHolder.itemView != null) {
+                    CheckBox cbxShoppingCart = viewHolder.itemView.findViewById(R.id.cbxShoppingCart);
+                    if (cbxShoppingCart != null) {
+                        cbxShoppingCart.setChecked(false);
+                        // Update the corresponding GroceryItem object
+                        if (i < groceryItems.size()) {
+                            GroceryItem groceryItem = groceryItems.get(i);
+                            groceryItem.setOnShoppingList(false);
+                        }
+                    }
+                }
+            }
+            adapter.notifyDataSetChanged();
+        }
+    }
+
+
+
     public static ArrayList<GroceryItem> readFromFile(Context context, String filename) {
         ArrayList<GroceryItem> groceryItems = new ArrayList<>();
         try {
