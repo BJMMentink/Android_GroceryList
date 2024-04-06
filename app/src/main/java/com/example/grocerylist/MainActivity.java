@@ -6,8 +6,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.CompoundButton;
-import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,7 +18,6 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
     public static final String TAG = "MainActivity";
     private ArrayList<GroceryItem> groceryItems;
-    private GroceryListAdapter adapter;
     GroceryListAdapter groceryListAdapter;
     RecyclerView groceryList;
     public static boolean isShoppingList = false;
@@ -39,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
             }
             GroceryListDataSource ds = new GroceryListDataSource(MainActivity.this);
             ds = new GroceryListDataSource(MainActivity.this);
-            ds.update(groceryItems.get(position), isShoppingList);
+            ds.update(groceryItems.get(position));
         }
 
     };
@@ -64,8 +62,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Pass isShoppingList value and onCheckedChangeListener to adapter
 
-
-        RebindTeams();
+        RebindList();
         Log.d(TAG, "onCreate: ");
     }
 
@@ -86,53 +83,73 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
-
-        RecyclerView recyclerView;
         if (itemId == R.id.action_MasterList && isShoppingList) {
             isShoppingList = false;
             GroceryListDataSource dataSource = new GroceryListDataSource(this);
             groceryItems = dataSource.getItemsOnShoppingList(isShoppingList);
-            RebindTeams();
+            RebindList();
             setTitle("Master List");
             return true;
         } else if (itemId == R.id.action_ShoppingList && !isShoppingList) {
             isShoppingList = true;
             GroceryListDataSource dataSource = new GroceryListDataSource(this);
             groceryItems = dataSource.getItemsOnShoppingList(isShoppingList);
-            RebindTeams();
+            RebindList();
             setTitle("Shopping List");
             return true;
         } else if (itemId == R.id.action_Add) {
-            FileManager.showAddItemDialog(this, groceryItems, adapter, isShoppingList);
+            GroceryListDataSource.showAddItemDialog(this, isShoppingList);
+            RebindList();
             return true;
         } else if (itemId == R.id.action_Clear) {
             clearAllCheckboxes();
+            RebindList();
             return true;
         } else if (itemId == R.id.action_Delete) {
-            recyclerView = findViewById(R.id.rvContainer);
-            FileManager.deleteCheckedItems(this, groceryItems, adapter, isShoppingList, recyclerView);
+            GroceryListDataSource ds = new GroceryListDataSource(this);
+            if (!isShoppingList) {
+                for (GroceryItem groceryItem : groceryItems) {
+                    if (groceryItem.isOnShoppingList())ds.delete(groceryItem);
+                }
+            }else {
+                deleteShopping();
+            }
+            RebindList();
             return true;
         } else {
             return super.onOptionsItemSelected(item);
         }
     }
-
+    @SuppressLint("NotifyDataSetChanged")
+    private void deleteShopping() {
+        for (GroceryItem groceryItem : groceryItems) {
+            if (groceryItem.isInCart()){
+            GroceryListDataSource ds = new GroceryListDataSource(this);
+            groceryItem.setOnShoppingList(false);
+            groceryItem.setInCart(false);
+            ds.update(groceryItem);
+            groceryItems = ds.getItemsOnShoppingList(isShoppingList);}
+        }
+    }
     @SuppressLint("NotifyDataSetChanged")
     private void clearAllCheckboxes() {
         for (GroceryItem groceryItem : groceryItems) {
+            GroceryListDataSource ds = new GroceryListDataSource(this);
             if (isShoppingList) {
                 groceryItem.setInCart(false);
             } else {
                 groceryItem.setOnShoppingList(false);
                 groceryItem.setInCart(false);
             }
+            ds.update(groceryItem);
         }
-        adapter.notifyDataSetChanged();
-        FileManager.writeGroceryItemsToFile(MainActivity.this, "grocery_list.txt", groceryItems, isShoppingList);
+        RebindList();
     }
-    private void RebindTeams() {
+    private void RebindList() {
         // Rebind the RecyclerView
         Log.d(TAG, "RebindTeams: Start");
+        GroceryListDataSource ds = new GroceryListDataSource(this);
+        ds.open();
         groceryList = findViewById(R.id.rvContainer);
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
         groceryList.setLayoutManager(layoutManager);
@@ -147,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         GroceryListDataSource ds = new GroceryListDataSource(MainActivity.this);
-        ds.open(false);
+        ds.open(true);
         groceryItems = ds.get();
 
         Log.d(TAG, "createTeams: End: " + groceryItems.size());

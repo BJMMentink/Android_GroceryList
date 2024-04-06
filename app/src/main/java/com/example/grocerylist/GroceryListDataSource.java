@@ -2,10 +2,15 @@ package com.example.grocerylist;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
 
 import java.util.ArrayList;
 
@@ -152,9 +157,11 @@ public class GroceryListDataSource {
     public int delete(int id)
     {
         try{
+            int rowsaffected = 0;
             Log.d(TAG, "delete: Start : " + id);
             Log.d(TAG, "delete: database" + database.isOpen());
-            return database.delete("tblTeam", "id = " + id, null);
+            rowsaffected = (int)database.delete("tblGroceryList", "id = " + id, null);
+            return rowsaffected;
         }
         catch(Exception e)
         {
@@ -238,7 +245,7 @@ public class GroceryListDataSource {
 
     }
 
-    public int update(GroceryItem groceryItem, boolean isShoppingList) {
+    public int update(GroceryItem groceryItem) {
         Log.d(TAG, "update: Start");
         int rowsAffected = 0;
 
@@ -275,6 +282,52 @@ public class GroceryListDataSource {
         return rowsAffected;
     }
 
+    public static void showAddItemDialog(final Context context, final boolean isShoppingList) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle("Add Item");
+        final EditText input = new EditText(context);
+        builder.setView(input);
 
+        builder.setPositiveButton("Add", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String newItem = input.getText().toString().trim();
+                if (!newItem.isEmpty()) {
+                    GroceryListDataSource dataSource = new GroceryListDataSource(context);
+                    boolean isChecked = isShoppingList ? false : true;
+                    dataSource.insertNewItem(newItem, isChecked);
+                } else {
+                    Toast.makeText(context, "Description cannot be empty", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+
+    public void insertNewItem(String groceryItemDescription, boolean isChecked)
+    {
+        Log.d(TAG, "insert: Start");
+        int rowsaffected = 0;
+
+        try{
+            ContentValues values = new ContentValues();
+            values.put("id" , getNewId());
+            values.put("item", groceryItemDescription);
+            if (!isChecked)values.put("isOnShoppingList", true);
+            else values.put("isOnShoppingList", false);
+            values.put("isInCart", false);
+
+            rowsaffected = (int)database.insert("tblGroceryList", null, values);
+            Log.d(TAG, "insertNewItem: " + values);
+            if (rowsaffected > 0) Toast.makeText(null, "Item added successfully", Toast.LENGTH_SHORT).show();
+            else Toast.makeText(null, "Item add failed" + values, Toast.LENGTH_SHORT).show();
+        }
+        catch(Exception e)
+        {
+            Log.d(TAG, "get: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }
