@@ -38,7 +38,7 @@ public class FileManager {
                         String description = parts[0];
                         boolean isOnShoppingList = parts[1].equals("1");
                         boolean isInCart = parts[2].equals("1");
-                        GroceryItem item = new GroceryItem(description, isOnShoppingList, isInCart);
+                        GroceryItem item = new GroceryItem(-1, description, isOnShoppingList, isInCart);
                         groceryItems.add(item);
                     }
                 }
@@ -52,6 +52,7 @@ public class FileManager {
         }
         return groceryItems;
     }
+
 
     public static void showAddItemDialog(final Context context, final ArrayList<GroceryItem> groceryItems, final GroceryListAdapter adapter, final boolean isShoppingList) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -81,7 +82,7 @@ public class FileManager {
             Toast.makeText(context, "Please return to the main screen to add items.", Toast.LENGTH_SHORT).show();
             return;
         }
-        GroceryItem newItem = new GroceryItem(description, false, false); // Set all parameters to false initially
+        GroceryItem newItem = new GroceryItem(-1, description, false, false); // Set all parameters to false initially
         groceryItems.add(newItem);
         writeGroceryItemsToFile(context, FILENAME, groceryItems, isShoppingList);
         adapter.notifyDataSetChanged();

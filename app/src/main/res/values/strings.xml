@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">GroceryList</string>
+    <string name="app_name">Grocery List</string>
     <string name="pizza">Pizza</string>
     <string name="shampoo">Shampoo</string>
     <string name="coffee">Coffee</string>
