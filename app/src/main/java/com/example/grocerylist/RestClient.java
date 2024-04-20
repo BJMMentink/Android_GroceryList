@@ -1,7 +1,6 @@
 package com.example.grocerylist;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
@@ -22,9 +21,11 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
+
 public class RestClient {
     public static final String TAG = "RestClient";
-    public static String Owner;
+    public static String OWNER;
+
     public static void execGetRequest(String url,
                                       String owner,
                                       boolean isShoppingList,
@@ -35,7 +36,7 @@ public class RestClient {
         RequestQueue requestQueue = Volley.newRequestQueue(context);
         ArrayList<GroceryItem> items = new ArrayList<GroceryItem>();
         Log.d(TAG, "execGetRequest: " + url);
-        Owner = owner;
+        OWNER = owner;
         try {
             StringRequest stringRequest = new StringRequest(Request.Method.GET,
                     url,
@@ -68,7 +69,7 @@ public class RestClient {
                                     item.setLatitude(object.getDouble("latitude"));
                                     item.setLongitude(object.getDouble("longitude"));
                                     if (isShoppingList){
-                                        if (onShoppingList) items.add(item);
+                                        if (item.isOnShoppingList()) items.add(item);
                                     }else{
                                         items.add(item);
                                     }
@@ -102,39 +103,32 @@ public class RestClient {
                                        String url,
                                        Context context,
                                        VolleyCallback volleyCallback,
-                                       int method)
-    {
-
-        Log.d(TAG, "executeRequest: " + method + ":" + url);
+                                       int method) {
         try {
             RequestQueue requestQueue = Volley.newRequestQueue(context);
-            JSONObject object = new JSONObject();
-            object.put("id", item.getId());
-            object.put("item", item.getDescription());
-            object.put("isOnShoppingList", item.isOnShoppingList());
-            object.put("isInCart", item.isInCart());
-            object.put("owner", item.getOwner());
-            object.put("latitude", item.getLatitude());
-            object.put("longitude", item.getLongitude());
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("id", item.getId()); // Make sure id is included if needed
+            jsonObject.put("item", item.getDescription());
+            jsonObject.put("isOnShoppingList", item.isOnShoppingList());
+            jsonObject.put("isInCart", item.isInCart());
+            jsonObject.put("owner", OWNER);
+            jsonObject.put("latitude", item.getLatitude());
+            jsonObject.put("longitude", item.getLongitude());
 
-            if(item.getPhoto() != null)
-            {
+            if (item.getPhoto() != null) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                Bitmap bitmap = Bitmap.createScaledBitmap(item.getPhoto(), 64, 64, false);
+                Bitmap bitmap = Bitmap.createScaledBitmap(item.getPhoto(), 144, 144, false);
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
                 byte[] imageBytes = baos.toByteArray();
                 String jsonPhoto = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
-                object.put("photo", jsonPhoto);
+                jsonObject.put("photo", jsonPhoto);
+            } else {
+                jsonObject.put("photo", JSONObject.NULL); // Use JSONObject.NULL for null value
             }
-            else
-            {
-                object.put("photo", null);
-            }
-
-            final String requestBody = object.toString();
+            final String requestBody = jsonObject.toString();
             Log.d(TAG, "executeRequest: " + requestBody);
 
-            JsonObjectRequest request = new JsonObjectRequest(method, url, object,
+            JsonObjectRequest request = new JsonObjectRequest(method, url, jsonObject,
                     new Response.Listener<JSONObject>() {
                         @Override
                         public void onResponse(JSONObject response) {
@@ -149,18 +143,19 @@ public class RestClient {
             {
                 @Override
                 public byte[] getBody(){
-                    Log.i(TAG, "getBody: " + object.toString());
-                    return object.toString().getBytes(StandardCharsets.UTF_8);
+                    Log.i(TAG, "getBody: " + jsonObject.toString());
+                    return jsonObject.toString().getBytes(StandardCharsets.UTF_8);
                 }
             };
 
             requestQueue.add(request);
 
         } catch (Exception e) {
-            Log.e(TAG, "Error parsing response: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }
+
+
     public static void execDeleteRequest(GroceryItem item,
                                          String url,
                                          Context context,
@@ -190,7 +185,11 @@ public class RestClient {
                                        VolleyCallback volleyCallback)
     {
         try {
-            executeRequest(item, url, context, volleyCallback, Request.Method.POST);
+            if (item.getId() == -1) {
+                executeRequest(item, url, context, volleyCallback, Request.Method.POST);
+            } else {
+                Log.d(TAG, "execPostRequest: Item already has an id, cannot execute POST request.");
+            }
         } catch (Exception e) {
             Log.d(TAG, "execPostRequest: " + e.getMessage());
             throw new RuntimeException(e);
@@ -219,21 +218,26 @@ public class RestClient {
                                 GroceryItem item = new GroceryItem();
                                 item.setId(object.getInt("id"));
                                 item.setDescription(object.getString("item"));
-                                item.setOnShoppingList(object.getBoolean("isOnShoppingList"));
-                                item.setInCart(object.getBoolean("isInCart"));
+                                int isOnShoppingList = object.getInt("isOnShoppingList");
+                                int isInCart = object.getInt("isInCart");
+                                boolean onShoppingList = isOnShoppingList == 1;
+                                boolean inCart = isInCart == 1;
+                                item.setOnShoppingList(onShoppingList);
+                                item.setInCart(inCart);
+                                item.setOwner(OWNER);
 
-                                //team.setLatitude(object.getDouble("latitude"));
-                                //team.setLongitude(object.getDouble("longitude"));
+                                item.setLatitude(object.getDouble("latitude"));
+                                item.setLongitude(object.getDouble("longitude"));
 
                                 String jsonPhoto = object.getString("photo");
 
-                                /*if(jsonPhoto != null)
+                                if(jsonPhoto != null)
                                 {
                                     byte[] bytePhoto = null;
                                     bytePhoto = Base64.decode(jsonPhoto, Base64.DEFAULT);
                                     Bitmap bmp = BitmapFactory.decodeByteArray(bytePhoto, 0, bytePhoto.length);
                                     item.setPhoto(bmp);
-                                }*/
+                                }
 
                                 items.add(item);
 
