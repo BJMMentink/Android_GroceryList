@@ -13,4 +13,9 @@
     <string name="enter_description">Enter description</string>
     <string name="add">Add</string>
     <string name="back">Return</string>
+    <string name="api_grocerylist">https://fvtcdp.azurewebsites.net/api/GroceryList/</string>
+    <string name="groceryprefs">groceryPreferences</string>
+    <string name="change_owner">Change Owner</string>
+    <string name="select_image">Select Image</string>
+    <string name="image">Image</string>
 </resources>

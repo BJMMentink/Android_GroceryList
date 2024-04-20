@@ -1,11 +1,14 @@
 package com.example.grocerylist;
 import android.content.Context;
+import android.media.Image;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -15,8 +18,9 @@ public class GroceryListAdapter extends RecyclerView.Adapter<GroceryListAdapter.
     private ArrayList<GroceryItem> groceryData;
     private View.OnClickListener onItemClickListener;
     private boolean isShoppingList;
-    private CompoundButton.OnCheckedChangeListener onCheckedChangeListener; // Define onCheckedChangeListener variable
+    private CompoundButton.OnCheckedChangeListener onCheckedChangeListener;
     public static final String TAG = "GroceryListAdapter";
+    public ImageView imagePhoto;
 
     private Context parentContext;
     public class ListViewHolder extends RecyclerView.ViewHolder {
@@ -27,13 +31,16 @@ public class GroceryListAdapter extends RecyclerView.Adapter<GroceryListAdapter.
             super(itemView);
             cbxShoppingCart = itemView.findViewById(R.id.cbxShoppingCart);
             tvDescription = itemView.findViewById(R.id.tvDescription);
+            imagePhoto = itemView.findViewById(R.id.imgItem);
             itemView.setTag(this);
             itemView.setOnClickListener(onItemClickListener);
             cbxShoppingCart.setTag(this);
             cbxShoppingCart.setOnCheckedChangeListener(onCheckedChangeListener);
+            Log.d(TAG, "ListViewHolder: " + imagePhoto);
         }
         public CheckBox getCbxShoppingCart() { return cbxShoppingCart; }
         public TextView getTvDescription() { return tvDescription; }
+        public ImageView getImagePhoto() {return imagePhoto;}
 
     }
 
@@ -59,6 +66,7 @@ public class GroceryListAdapter extends RecyclerView.Adapter<GroceryListAdapter.
         GroceryItem item = groceryData.get(position);
         listViewHolder.getTvDescription().setText(groceryData.get(position).getDescription());
         //listViewHolder.cbxShoppingCart.setOnCheckedChangeListener(onCheckedChangeListener);
+        listViewHolder.getImagePhoto().setImageBitmap(groceryData.get(position).getPhoto());
         if (MainActivity.isShoppingList) {
             listViewHolder.getCbxShoppingCart().setChecked(groceryData.get(position).isInCart());
         } else {
